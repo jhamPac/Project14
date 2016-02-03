@@ -48,3 +48,8 @@ enum ForceBomb {
     case Always
     case Default
 }
+
+enum SequenceType: Int
+{
+    case OneNoBomb, One, TwoWithOneBomb, Two, Three, Four, Chain, FastChain
+}
