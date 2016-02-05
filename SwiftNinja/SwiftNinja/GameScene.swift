@@ -35,6 +35,7 @@ class GameScene: SKScene
     var sequencePosition = 0
     var chainDelay = 3.0
     var nextSequenceQueued = true
+    var gameEnded = false
     
     // MARK: - Protocol Functions
     
@@ -90,6 +91,10 @@ class GameScene: SKScene
     {
         guard let touch = touches.first else { return }
         
+        if gameEnded {
+            return
+        }
+        
         let location = touch.locationInNode(self)
         
         activeSlicePoints.append(location)
@@ -99,6 +104,65 @@ class GameScene: SKScene
         if !swooshSoundActive
         {
             playSwooshSound()
+        }
+        
+        let nodes = nodesAtPoint(location)
+        
+        for node in nodes
+        {
+            if node.name == "enemy"
+            {
+                // destroy penguin
+                
+                let emitter = SKEmitterNode(fileNamed: "sliceHitEnemy")!
+                emitter.position = node.position
+                addChild(emitter)
+                
+                node.name = ""
+                
+                node.physicsBody!.dynamic = false
+                
+                let scaleOut = SKAction.scaleTo(0.001, duration: 0.2)
+                let fadeOut = SKAction.fadeOutWithDuration(0.2)
+                let group = SKAction.group([scaleOut, fadeOut])
+                
+                let seq = SKAction.sequence([group, SKAction.removeFromParent()])
+                node.runAction(seq)
+                
+                score += 1
+                
+                let index = activeEnemies.indexOf(node as! SKSpriteNode)!
+                activeEnemies.removeAtIndex(index)
+                
+                runAction(SKAction.playSoundFileNamed("whack.caf", waitForCompletion: false))
+                
+            }
+            else if node.name == "bomb"
+            {
+                // destroy bomb
+                
+                let emitter = SKEmitterNode(fileNamed: "sliceHitBomb")!
+                emitter.position = node.parent!.position
+                addChild(emitter)
+                
+                node.name = ""
+                node.parent!.physicsBody!.dynamic = false
+                
+                let scaleOut = SKAction.scaleTo(0.001, duration: 0.2)
+                let fadeOut = SKAction.fadeOutWithDuration(0.2)
+                let group = SKAction.group([scaleOut, fadeOut])
+                
+                let seq = SKAction.sequence([group, SKAction.removeFromParent()])
+                
+                node.parent!.runAction(seq)
+                
+                let index = activeEnemies.indexOf(node.parent as! SKSpriteNode)!
+                activeEnemies.removeAtIndex(index)
+                
+                runAction(SKAction.playSoundFileNamed("explosion.caf", waitForCompletion: false))
+                
+                endGame(triggeredByBomb: true)
+            }
         }
     }
     
@@ -144,10 +208,29 @@ class GameScene: SKScene
             {
                 if node.position.y < -140
                 {
-                    node.removeFromParent()
+                    node.removeAllActions()
                     
-                    if let index = activeEnemies.indexOf(node){
-                        activeEnemies.removeAtIndex(index)
+                    if node.name == "enemy"
+                    {
+                        node.name = ""
+                        subtractLife()
+                        
+                        node.removeFromParent()
+                        
+                        if let index = activeEnemies.indexOf(node)
+                        {
+                            activeEnemies.removeAtIndex(index)
+                        }
+                    }
+                    else if node.name == "bombContainer"
+                    {
+                        node.name = ""
+                        node.removeFromParent()
+                        
+                        if let index = activeEnemies.indexOf(node)
+                        {
+                            activeEnemies.removeAtIndex(index)
+                        }
                     }
                 }
             }
@@ -324,6 +407,11 @@ class GameScene: SKScene
     }
     
     func tossEnemies() {
+        
+        if gameEnded {
+            return
+        }
+        
         popupTime *= 0.991
         chainDelay *= 0.99
         physicsWorld.speed *= 1.02
@@ -390,6 +478,56 @@ class GameScene: SKScene
         
         runAction(swooshSound) { [unowned self] in
             self.swooshSoundActive = false
+        }
+    }
+    
+    func subtractLife()
+    {
+        lives -= 1
+        
+        runAction(SKAction.playSoundFileNamed("wrong.caf", waitForCompletion: false))
+        
+        var life: SKSpriteNode
+        
+        if lives == 2
+        {
+            life = livesImages[0]
+        }
+        else if lives == 1
+        {
+            life = livesImages[1]
+        }
+        else
+        {
+            life = livesImages[2]
+            endGame(triggeredByBomb: false)
+        }
+        
+        life.texture = SKTexture(imageNamed: "sliceLifeGone")
+        
+        life.xScale = 1.3
+        life.yScale = 1.3
+        life.runAction(SKAction.scaleTo(1, duration: 0))
+    }
+    
+    func endGame(triggeredByBomb triggeredByBomb: Bool) {
+        if gameEnded {
+            return
+        }
+        
+        gameEnded = true
+        physicsWorld.speed = 0
+        userInteractionEnabled = false
+        
+        if bombSoundEffect != nil {
+            bombSoundEffect.stop()
+            bombSoundEffect = nil
+        }
+        
+        if triggeredByBomb {
+            livesImages[0].texture = SKTexture(imageNamed: "sliceLifeGone")
+            livesImages[1].texture = SKTexture(imageNamed: "sliceLifeGone")
+            livesImages[2].texture = SKTexture(imageNamed: "sliceLifeGone")
         }
     }
 }
