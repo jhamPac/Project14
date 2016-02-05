@@ -55,6 +55,7 @@ class GameScene: SKScene
         
         sequence = [.OneNoBomb, .OneNoBomb, .TwoWithOneBomb, .TwoWithOneBomb, .Three, .One, .Chain]
         
+        // essentially building up the sequence array to use in tossEnemy function
         for _ in 0...1000
         {
             let nextSequence = SequenceType(rawValue: RandomInt(min: 2, max: 7))!
@@ -256,10 +257,9 @@ class GameScene: SKScene
         gameScore.text = "How Many Fucks: 0"
         gameScore.horizontalAlignmentMode = .Left
         gameScore.fontSize = 48
+        gameScore.position = CGPoint(x: 8, y: 8)
         
         addChild(gameScore)
-        
-        gameScore.position = CGPoint(x: 8, y: 8)
     }
     
     func createLives()
@@ -298,6 +298,7 @@ class GameScene: SKScene
     
     func redrawActiveSlice()
     {
+        // this just exits the method if player just taps the screen
         if activeSlicePoints.count < 2
         {
             activeSliceBG.path = nil
@@ -325,6 +326,8 @@ class GameScene: SKScene
     func createEnemy(forceBomb forceBomb: ForceBomb = .Default)
     {
         var enemy: SKSpriteNode
+        
+        // this can control the frequncy of bombs
         var enemyType = RandomInt(min: 0, max: 6)
         
         // Setting enemyType according to Enum
@@ -354,11 +357,9 @@ class GameScene: SKScene
                 bombSoundEffect = nil
             }
             
-            let path = NSBundle.mainBundle().pathForResource("sliceBombFuse.caf", ofType: nil)!
-            let url = NSURL(fileURLWithPath: path)
-            let sound = try! AVAudioPlayer(contentsOfURL: url)
-            bombSoundEffect = sound
-            sound.play()
+            // get the sound for the av player
+            bombSoundEffect = getAVSound()
+            bombSoundEffect.play()
             
             let emitter = SKEmitterNode(fileNamed: "sliceFuse.sks")!
             emitter.position = CGPoint(x: 76, y: 64)
@@ -375,7 +376,10 @@ class GameScene: SKScene
         let randomPosition = CGPoint(x: RandomInt(min: 64, max: 960), y: -128)
         enemy.position = randomPosition
         
+        // this is a radian angle the enemy will fly at
         let randomAngularVelocity = CGFloat(RandomInt(min: -6, max: 6)) / 2.0
+        
+        // how fast the thing will go; think right triangles
         var randomXVelocity = 0
         
         if randomPosition.x < 256
@@ -395,6 +399,7 @@ class GameScene: SKScene
             randomXVelocity = -RandomInt(min: 8, max: 15)
         }
         
+        // y velocity is always between 24 and 32
         let randomYVelocity = RandomInt(min: 24, max: 32)
         
         enemy.physicsBody = SKPhysicsBody(circleOfRadius: 64)
@@ -402,8 +407,16 @@ class GameScene: SKScene
         enemy.physicsBody!.angularVelocity = randomAngularVelocity
         enemy.physicsBody!.collisionBitMask = 0
         
-        addChild(enemy)
         activeEnemies.append(enemy)
+        addChild(enemy)
+    }
+    
+    func getAVSound() -> AVAudioPlayer
+    {
+        let path = NSBundle.mainBundle().pathForResource("sliceBombFuse.caf", ofType: nil)!
+        let url = NSURL(fileURLWithPath: path)
+        let sound = try! AVAudioPlayer(contentsOfURL: url)
+        return sound
     }
     
     func tossEnemies() {
@@ -412,6 +425,7 @@ class GameScene: SKScene
             return
         }
         
+        // pop up time and delay gets smaller/faster everytime tossEnemies is called
         popupTime *= 0.991
         chainDelay *= 0.99
         physicsWorld.speed *= 1.02
