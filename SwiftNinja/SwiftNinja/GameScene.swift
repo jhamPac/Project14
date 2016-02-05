@@ -11,15 +11,17 @@ import AVFoundation
 
 class GameScene: SKScene
 {
+    // MARK: - Scene Variables
     var gameScore: SKLabelNode!
+    var livesImages = [SKSpriteNode]()
+    var lives = 3
     var score: Int = 0 {
         didSet {
             gameScore.text = "How Many Fucks: \(score)"
         }
     }
     
-    var livesImages = [SKSpriteNode]()
-    var lives = 3
+    // shapNode
     var activeSliceBG: SKShapeNode!
     var activeSliceFG: SKShapeNode!
     var activeSlicePoints = [CGPoint]()
@@ -33,6 +35,8 @@ class GameScene: SKScene
     var sequencePosition = 0
     var chainDelay = 3.0
     var nextSequenceQueued = true
+    
+    // MARK: - Protocol Functions
     
     override func didMoveToView(view: SKView)
     {
@@ -161,45 +165,7 @@ class GameScene: SKScene
         }
     }
     
-    func redrawActiveSlice()
-    {
-        if activeSlicePoints.count < 2
-        {
-            activeSliceBG.path = nil
-            activeSliceFG.path = nil
-            return
-        }
-        
-        while activeSlicePoints.count > 12
-        {
-            activeSlicePoints.removeAtIndex(0)
-        }
-        
-        let path = UIBezierPath()
-        path.moveToPoint(activeSlicePoints[0])
-        
-        for i in 1..<activeSlicePoints.count
-        {
-            path.addLineToPoint(activeSlicePoints[i])
-        }
-        
-        activeSliceBG.path = path.CGPath
-        activeSliceFG.path = path.CGPath
-    }
-    
-    func playSwooshSound()
-    {
-        swooshSoundActive = true
-        
-        let randomNumber = RandomInt(min: 1, max: 3)
-        let soundName = "swoosh\(randomNumber).caf"
-        
-        let swooshSound = SKAction.playSoundFileNamed(soundName, waitForCompletion: true)
-        
-        runAction(swooshSound) { [unowned self] in
-            self.swooshSoundActive = false
-        }
-    }
+    // MARK: - Game Setup Functions
     
     func createScore()
     {
@@ -243,6 +209,34 @@ class GameScene: SKScene
         
         addChild(activeSliceBG)
         addChild(activeSliceFG)
+    }
+    
+    // MARK: - Enemy Related Functions
+    
+    func redrawActiveSlice()
+    {
+        if activeSlicePoints.count < 2
+        {
+            activeSliceBG.path = nil
+            activeSliceFG.path = nil
+            return
+        }
+        
+        while activeSlicePoints.count > 12
+        {
+            activeSlicePoints.removeAtIndex(0)
+        }
+        
+        let path = UIBezierPath()
+        path.moveToPoint(activeSlicePoints[0])
+        
+        for i in 1..<activeSlicePoints.count
+        {
+            path.addLineToPoint(activeSlicePoints[i])
+        }
+        
+        activeSliceBG.path = path.CGPath
+        activeSliceFG.path = path.CGPath
     }
     
     func createEnemy(forceBomb forceBomb: ForceBomb = .Default)
@@ -383,5 +377,19 @@ class GameScene: SKScene
         sequencePosition += 1
         
         nextSequenceQueued = false
+    }
+    
+    func playSwooshSound()
+    {
+        swooshSoundActive = true
+        
+        let randomNumber = RandomInt(min: 1, max: 3)
+        let soundName = "swoosh\(randomNumber).caf"
+        
+        let swooshSound = SKAction.playSoundFileNamed(soundName, waitForCompletion: true)
+        
+        runAction(swooshSound) { [unowned self] in
+            self.swooshSoundActive = false
+        }
     }
 }
